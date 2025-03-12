@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運転免許試験解答アプリ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-y: auto;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .input-section, .question-section, .result-section {
+            margin-bottom: 20px;
+        }
+        input[type="number"], button {
+            padding: 10px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        input[type="number"] {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 100px;
+        }
+        button {
+            background: #00b4db;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0083b0;
+            transform: translateY(-2px);
+        }
+        .question {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .choice-btn {
+            width: 50px;
+            margin: 0 10px;
+        }
+        .result {
+            font-size: 1.2em;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .correct { color: #00ff00; }
+        .incorrect { color: #ff0000; }
+        .unanswered { color: #ffff00; }
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>運転免許試験解答アプリ</h1>
+        <div class="input-section" id="inputSection">
+            <label for="numQuestions">問題数を入力してください:</label><br>
+            <input type="number" id="numQuestions" min="1" placeholder="例: 10">
+            <button onclick="startQuiz()">開始</button>
+        </div>
+        <div class="question-section" id="questionSection" style="display: none;">
+            <div id="questions"></div>
+            <div class="button-group">
+                <button onclick="submitAnswers()">回答を提出</button>
+            </div>
+        </div>
+        <div class="result-section" id="resultSection" style="display: none;"></div>
+    </div>
+
+    <script>
+        let numQuestions = 0;
+        let userAnswers = [];
+        let correctAnswers = [];
+
+        function startQuiz() {
+            numQuestions = parseInt(document.getElementById('numQuestions').value);
+            if (isNaN(numQuestions) || numQuestions < 1) {
+                alert('有効な問題数を入力してください');
+                return;
+            }
+
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('questionSection').style.display = 'block';
+
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = '';
+
+            for (let i = 0; i < numQuestions; i++) {
+                const questionDiv = document.createElement('div');
+                questionDiv.classList.add('question');
+                questionDiv.innerHTML = `
+                    <p>問題 ${i + 1}</p>
+                    <button class="choicxe-btn" onclick="selectAnswer(${i}, true)">〇</button>
+                    <button class="choice-btn" onclick="selectAnswer(${i}, false)">✕</button>
+                `;
+                questionsDiv.appendChild(questionDiv);
+            }
+            userAnswers = new Array(numQuestions).fill(null);
+        }
+
+        function selectAnswer(index, answer) {
+            userAnswers[index] = answer;
+            const buttons = document.getElementsByClassName('question')[index].getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.style.background = btn.textContent === (answer ? '〇' : '✕') ? '#00b4db' : '#fff';
+                btn.style.color = btn.textContent === (answer ? '〇' : '✕') ? '#fff' : '#000';
+            }
+        }
+
+        function submitAnswers() {
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = '';
+            correctAnswers = new Array(numQuestions).fill(null);
+
+            for (let i = 0; i < numQuestions; i++) {
+                const questionDiv = document.createElement('div');
+                questionDiv.classList.add('question');
+                questionDiv.innerHTML = `
+                    <p>問題 ${i + 1} の正解を入力</p>
+                    <button class="choice-btn" onclick="setCorrectAnswer(${i}, true)">〇</button>
+                    <button class="choice-btn" onclick="setCorrectAnswer(${i}, false)">✕</button>
+                `;
+                questionsDiv.appendChild(questionDiv);
+            }
+            const buttonGroup = document.createElement('div');
+            buttonGroup.classList.add('button-group');
+            buttonGroup.innerHTML = `
+                <button onclick="checkAnswers()">答え合わせ</button>
+                <button onclick="backToAnswers()" style="background: #ff5555;">戻る</button>
+            `;
+            document.getElementById('questionSection').appendChild(buttonGroup);
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // ページトップに移動
+        }
+
+        function setCorrectAnswer(index, answer) {
+            correctAnswers[index] = answer;
+            const buttons = document.getElementsByClassName('question')[index].getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.style.background = btn.textContent === (answer ? '〇' : '✕') ? '#00b4db' : '#fff';
+                btn.style.color = btn.textContent === (answer ? '〇' : '✕') ? '#fff' : '#000';
+            }
+        }
+
+        function backToAnswers() {
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = '';
+            const questionSection = document.getElementById('questionSection');
+            questionSection.innerHTML = '<div id="questions"></div><div class="button-group"><button onclick="submitAnswers()">回答を提出</button></div>';
+
+            for (let i = 0; i < numQuestions; i++) {
+                const questionDiv = document.createElement('div');
+                questionDiv.classList.add('question');
+                questionDiv.innerHTML = `
+                    <p>問題 ${i + 1}</p>
+                    <button class="choice-btn" onclick="selectAnswer(${i}, true)">〇</button>
+                    <button class="choice-btn" onclick="selectAnswer(${i}, false)">✕</button>
+                `;
+                document.getElementById('questions').appendChild(questionDiv);
+            }
+            for (let i = 0; i < numQuestions; i++) {
+                if (userAnswers[i] !== null) selectAnswer(i, userAnswers[i]);
+            }
+        }
+
+        function checkAnswers() {
+            document.getElementById('questionSection').style.display = 'none';
+            const resultSection = document.getElementById('resultSection');
+            resultSection.style.display = 'block';
+            resultSection.innerHTML = '<h2>結果</h2>';
+
+            let correctCount = 0;
+            for (let i = 0; i < numQuestions; i++) {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('result');
+
+                if (userAnswers[i] === null || correctAnswers[i] === null) {
+                    resultDiv.textContent = `問題 ${i + 1}: 未回答 ⚠`;
+                    resultDiv.classList.add('unanswered');
+                } else {
+                    const isCorrect = userAnswers[i] === correctAnswers[i];
+                    resultDiv.textContent = `問題 ${i + 1}: ${isCorrect ? '正解' : '不正解'}`;
+                    resultDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    if (isCorrect) correctCount++;
+                }
+                resultSection.appendChild(resultDiv);
+            }
+            const summary = document.createElement('div');
+            summary.classList.add('result');
+            summary.textContent = `正解数: ${correctCount} / ${numQuestions}`;
+            resultSection.appendChild(summary);
+        }
+    </script>
+</body>
+</html>
